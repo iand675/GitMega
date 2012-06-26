@@ -5,9 +5,7 @@ import           Control.Monad.Reader
 import           System.Concert
 import qualified Data.Text as T
 
-isDirty = (/= ExitSuccess) <$> (git "diff" ["--no-ext-diff", "--quiet", "--exit-code"] >>= exitCode)
-
-ifM b ma = if b then ma >> return () else return ()
+isDirty = didExitFail $ git "diff" ["--no-ext-diff", "--quiet", "--exit-code"]
 
 bracketWhen :: Monad m => m Bool -> m a -> m b -> m c -> m c
 bracketWhen mb mbefore mafter maction = do
@@ -17,15 +15,18 @@ bracketWhen mb mbefore mafter maction = do
   when b $ mafter >> return ()
   return a
 
-smartStash = bracketWhen isDirty (exitCode $ git "stash" []) (exitCode $ git "stash" ["pop"])
-  
+smartStash = bracketWhen isDirty (awaitExit $ git "stash" []) (awaitExit $ git "stash" ["pop"])
+
 -- puts you on the new head of the most recent branch you were on.
 -- if you were not on a branch, returns to the commit you were on.
 smartCheckout a = do
-  getBranchTip
-  location <- catchany_sh getBranchTip (const getRef)
-  result <- a
-  git "checkout" [location]
+  symP <- getBranchTip
+  hasSymbolicName <- wasExitSuccess symP
+  reference <- if hasSymbolicName
+               then (head . asLines) <$> out symP
+               else (head . asLines) <$> out getBranchTip  
+  result <- action
+  awaitExit $ git "checkout" [location]
   return a
 
 getRef = git "rev-parse" ["HEAD"]
