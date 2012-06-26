@@ -12,12 +12,12 @@ import          Command.Update
 
 gitRepos = getWorkingDirectory >>= listDirectory >>= filterM (isDirectory . (</> ".git"))
 
-updateAll = gitRepos >>= mapM_ update
+updateAll = gitRepos >>= mapM_ (async . update)
 
 main :: IO ()
-main = runChoice help [(updateCmd, updateInfo)]
+main = run (updateCmd, updateInfo) -- runChoice help [(updateCmd, updateInfo)]
 
-help = undefined
+-- help = undefined
 
 commandName :: Term String
 commandName = pos 0 "help" posInfo { argName = "COMMAND" }

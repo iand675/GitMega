@@ -26,4 +26,6 @@ executable git-mega
   build-depends:       base ==4.5.*, 
                        text ==0.11.*, 
                        concert < 0.2,
-                       mtl ==2.*
+                       mtl ==2.*,
+                       cmdtheline ==0.1.*,
+                       data-default ==0.*
