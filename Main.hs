@@ -1,17 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import          Control.Applicative
 import          Control.Monad
+import          Data.Default
 import          System.Concert
 import          System.Concert.Filesystem
+import          System.Console.CmdTheLine
 
--- import          Command.Update
+import          Command.Update
 
 gitRepos = getWorkingDirectory >>= listDirectory >>= filterM (isDirectory . (</> ".git"))
 
-main = do
-  repos <- inCurrentDirectory Nothing $ gitRepos
-  print repos
+updateAll = gitRepos >>= mapM_ update
+
+main :: IO ()
+main = runChoice help [(updateCmd, updateInfo)]
+
+help = undefined
+
+commandName :: Term String
+commandName = pos 0 "help" posInfo { argName = "COMMAND" }
+
+directoryArg :: Term (Maybe String)
+directoryArg = pos 1 Nothing $ posInfo { argName = "DIRECTORY" }
+
+updateCmd = updateCommand <$> commandName <*> directoryArg
+
+updateInfo = def { termName = "git mega"
+                 , termDoc = "commands for execution across many repositories" }
+
+updateCommand :: String -> Maybe String -> IO ()
+updateCommand cmdName mdir = case mdir of
+  Nothing -> inCurrentDirectory Nothing updateAll
+  Just dir -> inDirectory (decodeString dir) Nothing updateAll
 
 {-
 branchInfo branch field = git "config" $ [LT.concat ["branch.", branch, ".", field]]

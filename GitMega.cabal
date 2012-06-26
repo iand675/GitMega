@@ -15,17 +15,15 @@ category:            Development
 build-type:          Simple
 cabal-version:       >=1.8
 
-executable GitMega
-  -- main-is:             
-  -- other-modules:       
+executable git-mega
+  main-is:             Main.hs
+  other-modules:       Command.Update
   extensions:          OverloadedStrings,
                        ExtendedDefaultRules,
                        QuasiQuotes,
                        TemplateHaskell,
                        KindSignatures
-  ghc-options:         -fno-warn-type-defaults,
-                       -Wall
   build-depends:       base ==4.5.*, 
                        text ==0.11.*, 
-                       shelly ==0.10.*, 
-                       shelly-extra ==0.2.*,
+                       concert < 0.2,
+                       mtl ==2.*
