@@ -1,37 +1,28 @@
-{-# LANGUAGE KindSignatures #-}
 module Command.Update where
 import           Control.Concurrent
 import           Control.Monad.Trans
 import           Control.Monad.Reader
-import qualified Data.Text.Lazy as LT
-import           Shelly
-default (LT.Text)
+import           System.Concert
+import qualified Data.Text as T
 
-type Ref = LT.Text
-type Tracking = LT.Text
+isDirty = (/= ExitSuccess) <$> (git "diff" ["--no-ext-diff", "--quiet", "--exit-code"] >>= exitCode)
 
-data ConsoleMessage = Good
-                    | Bad
-                    | Ugly
+ifM b ma = if b then ma >> return () else return ()
 
-
-command1' cmd cmdargs sub subargs = LT.init <$> command1 cmd cmdargs sub subargs
-git = command1' "git" []
-
-needsStash = catchany_sh
-  (git "diff" ["--no-ext-diff", "--quiet", "--exit-code"] >> return False)
-  (const $ return True)
-
-smartStash a = do
-  shouldStash <- needsStash
-  when shouldStash $ git "stash" [] >> return ()
-  result <- a
-  when shouldStash $ git "stash" ["pop"] >> return ()
+bracketWhen :: Monad m => m Bool -> m a -> m b -> m c -> m c
+bracketWhen mb mbefore mafter maction = do
+  b <- mb
+  when b $ mbefore >> return ()
+  a <- ma
+  when b $ mafter >> return ()
   return a
+
+smartStash = bracketWhen isDirty (exitCode $ git "stash" []) (exitCode $ git "stash" ["pop"])
   
 -- puts you on the new head of the most recent branch you were on.
 -- if you were not on a branch, returns to the commit you were on.
 smartCheckout a = do
+  getBranchTip
   location <- catchany_sh getBranchTip (const getRef)
   result <- a
   git "checkout" [location]

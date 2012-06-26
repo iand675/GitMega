@@ -7,7 +7,9 @@ import Shelly
 import Shelly.Background
 default (LT.Text)
 
-git = command1 "git" []
+command1' cmd cmdargs sub subargs = LT.init <$> command1 cmd cmdargs sub subargs
+
+git cmd args = command1' "git" [] cmd args
 
 branchInfo branch field = git "config" $ [LT.concat ["branch.", branch, ".", field]]
 
