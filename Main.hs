@@ -1,16 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
-import Control.Concurrent
-import Control.Monad
-import qualified Data.Text.Lazy as LT
-import GHC.Conc
-import Shelly
-import Shelly.Background
-default (LT.Text)
 
-command1' cmd cmdargs sub subargs = LT.init <$> command1 cmd cmdargs sub subargs
+import          Control.Monad
+import          System.Concert
+import          System.Concert.Filesystem
 
-git cmd args = command1' "git" [] cmd args
+-- import          Command.Update
 
+gitRepos = getWorkingDirectory >>= listDirectory >>= filterM (isDirectory . (</> ".git"))
+
+main = do
+  repos <- inCurrentDirectory Nothing $ gitRepos
+  print repos
+
+{-
 branchInfo branch field = git "config" $ [LT.concat ["branch.", branch, ".", field]]
 
 upstream branch = do
@@ -28,8 +31,7 @@ withStash a = do
   result <- a
   when didStash $ git "stash" ["pop", "-q"] >> return ()
   return a
-  
-gitRepos :: [Shelly.FilePath] -> ShIO [Shelly.FilePath]
+
 gitRepos = filterM (test_e . (</> ".git"))
 
 tellFinished chan repo = liftIO $ writeChan chan $ LT.append "Finished updating " $ toTextIgnore repo
@@ -57,4 +59,4 @@ main = do
     promises <- mapM (background manager . update outputChan) repos
     verbosely $ replicateM_ (2 * length repos) $ (liftIO $ readChan outputChan) >>= echo
     
-    
+-}
